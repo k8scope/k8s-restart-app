@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -102,7 +103,7 @@ func TestGetPodStatusFormat(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want map[corev1.PodPhase]int
+		want PodStatus
 	}{
 		{
 			name: "one pod",
@@ -113,7 +114,7 @@ func TestGetPodStatusFormat(t *testing.T) {
 					},
 				},
 			},
-			want: map[corev1.PodPhase]int{
+			want: PodStatus{
 				corev1.PodRunning: 1,
 			},
 		},
@@ -129,7 +130,7 @@ func TestGetPodStatusFormat(t *testing.T) {
 					},
 				},
 			},
-			want: map[corev1.PodPhase]int{
+			want: PodStatus{
 				corev1.PodRunning: 1,
 				corev1.PodPending: 1,
 			},
@@ -137,8 +138,11 @@ func TestGetPodStatusFormat(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GetPodStatusFormat(tt.args.pod); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetPodStatusFormat() = %v, want %v", got, tt.want)
+			got := GetPodStatusFormat(tt.args.pod)
+			diff := cmp.Diff(got, tt.want)
+			if diff != "" {
+				t.Errorf("GetPodStatusFormat() mismatch (-got +want):\n%s", diff)
+				return
 			}
 		})
 	}
