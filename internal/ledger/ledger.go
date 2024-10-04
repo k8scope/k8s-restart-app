@@ -13,8 +13,9 @@ import (
 )
 
 type Status struct {
-	Message   string        `json:"message"`
-	PodStatus k8s.PodStatus `json:"pod_status"`
+	Message     string        `json:"message"`
+	PodStatus   k8s.PodStatus `json:"pod_status"`
+	LastRestart string        `json:"last_restart"`
 }
 
 func (s *Status) send(err error, observer *observer.Observer[Status]) {
@@ -79,6 +80,7 @@ func (l *Ledger) watch(kindNamespaceName k8s.KindNamespaceName) {
 
 				podStatus := k8s.GetPodStatusFormat(pods)
 				status.PodStatus = podStatus
+				status.LastRestart = deployment.Spec.Template.ObjectMeta.Annotations["kubectl.kubernetes.io/restartedAt"]
 				status.send(nil, l.transactions[kindNamespaceName.String()])
 			case "StatefulSet":
 				ctx, cf := context.WithDeadline(context.Background(), time.Now().Add(5*time.Second))
@@ -101,6 +103,7 @@ func (l *Ledger) watch(kindNamespaceName k8s.KindNamespaceName) {
 
 				podStatus := k8s.GetPodStatusFormat(pods)
 				status.PodStatus = podStatus
+				status.LastRestart = statefulset.Spec.Template.ObjectMeta.Annotations["kubectl.kubernetes.io/restartedAt"]
 				status.send(nil, l.transactions[kindNamespaceName.String()])
 			default:
 				slog.Error("invalid kind", "kind", kindNamespaceName.Kind)
