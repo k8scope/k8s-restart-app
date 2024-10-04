@@ -28,6 +28,40 @@ services:
     namespace: my-namespace # The namespace the service is running in
 ```
 
+In order for the application to actually be able to restart the services, the service account the application is running under, must have the necessary permissions. The following RBAC configuration can be used to grant the necessary permissions:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: restart-app
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets"]
+    verbs: ["get", "list", "watch", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: restart-app
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: restart-app
+subjects:
+  - kind: ServiceAccount
+    name: restart-app
+    namespace: default
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: restart-app
+```
+
 ## API
 
 The application provides a simple API to restart services. The following endpoints are available:
