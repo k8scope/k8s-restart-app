@@ -10,7 +10,24 @@ import (
 	"github.com/k8scope/k8s-restart-app/internal/config"
 	"github.com/k8scope/k8s-restart-app/internal/k8s"
 	"github.com/k8scope/k8s-restart-app/internal/ledger"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"k8s.io/client-go/kubernetes"
+)
+
+var (
+	metricGaugeConnectedWatchers = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "restart_app_connected_status_watchers",
+		Help: "The number of connected status watchers",
+	}, []string{"kind", "namespace", "name"})
+	metricCountRestarts = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "restart_app_restarts_total",
+		Help: "The total number of restarts",
+	}, []string{"kind", "namespace", "name"})
+	metricCountRestartsFailed = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "restart_app_restarts_failed_total",
+		Help: "The total number of failed restarts",
+	}, []string{"kind", "namespace", "name"})
 )
 
 func getKindNamespaceNameFromRequest(r *http.Request) k8s.KindNamespaceName {
@@ -26,9 +43,11 @@ func getKindNamespaceNameFromRequest(r *http.Request) k8s.KindNamespaceName {
 
 func Restart(client *kubernetes.Clientset) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		kindNamesaceName := getKindNamespaceNameFromRequest(r)
-		err := k8s.RestartService(r.Context(), client, kindNamesaceName)
+		kindNamespaceName := getKindNamespaceNameFromRequest(r)
+		metricCountRestarts.WithLabelValues(kindNamespaceName.Kind, kindNamespaceName.Namespace, kindNamespaceName.Name).Inc()
+		err := k8s.RestartService(r.Context(), client, kindNamespaceName)
 		if err != nil {
+			metricCountRestartsFailed.WithLabelValues(kindNamespaceName.Kind, kindNamespaceName.Namespace, kindNamespaceName.Name).Inc()
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -54,6 +73,10 @@ func Status(ledger *ledger.Ledger) func(w http.ResponseWriter, r *http.Request) 
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		kindNamespaceName := getKindNamespaceNameFromRequest(r)
+
+		metricGaugeConnectedWatchers.WithLabelValues(kindNamespaceName.Kind, kindNamespaceName.Namespace, kindNamespaceName.Name).Inc()
+		defer metricGaugeConnectedWatchers.WithLabelValues(kindNamespaceName.Kind, kindNamespaceName.Namespace, kindNamespaceName.Name).Dec()
+
 		// start listening for updates
 		statusCh, unregister := ledger.Register(kindNamespaceName)
 		// when the client disconnects, we stop listening for updates and unregister the client

@@ -10,6 +10,7 @@ import (
 	"github.com/k8scope/k8s-restart-app/internal/config"
 	"github.com/k8scope/k8s-restart-app/internal/ledger"
 	"github.com/k8scope/k8s-restart-app/internal/utils"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -68,9 +69,11 @@ func init() {
 
 func main() {
 	defer ldgr.Close()
+	slog.Info("starting server...", "listen_address", envListenAddress)
 
 	rt := chi.NewRouter()
 	rt.Get("/", api.Index)
+	rt.Handle("/metrics", promhttp.Handler())
 	rt.Route("/api/v1", func(r chi.Router) {
 		r.Route("/service", func(r chi.Router) {
 			r.Get("/", api.ListApplications(*appConfig))
