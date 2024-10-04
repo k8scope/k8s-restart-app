@@ -1,0 +1,36 @@
+
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - dep/go
+      - dependabot
+    groups:
+      go-deps:
+        patterns:
+          - "*"
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - dep/docker
+      - dependabot
+    groups:
+      docker-deps:
+        patterns:
+          - "*"
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - dep/gh-actions
+      - dependabot
+    groups:
+      actions-deps:
+        patterns:
+          - "*"
