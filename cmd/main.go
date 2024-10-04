@@ -78,6 +78,7 @@ func main() {
 		r.Route("/service", func(r chi.Router) {
 			r.Get("/", api.ListApplications(*appConfig))
 			r.Route("/{kind}/{namespace}/{name}", func(r chi.Router) {
+				r.Use(api.MiddlewareValidation(*appConfig))
 				r.Post("/restart", api.Restart(k8sClient))
 				r.Get("/status", api.Status(ldgr))
 			})

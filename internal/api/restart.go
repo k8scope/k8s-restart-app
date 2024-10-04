@@ -41,6 +41,37 @@ func getKindNamespaceNameFromRequest(r *http.Request) k8s.KindNamespaceName {
 	}
 }
 
+func MiddlewareValidation(config config.Config) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			kindNamespaceName := getKindNamespaceNameFromRequest(r)
+			isFound := false
+
+			if kindNamespaceName.Kind == "" || kindNamespaceName.Namespace == "" || kindNamespaceName.Name == "" {
+				http.Error(w, "invalid request", http.StatusBadRequest)
+				return
+			}
+
+			if kindNamespaceName.Kind != "Deployment" && kindNamespaceName.Kind != "StatefulSet" {
+				http.Error(w, "invalid kind", http.StatusBadRequest)
+				return
+			}
+
+			for _, service := range config.Services {
+				if service.Kind == kindNamespaceName.Kind && service.Namespace == kindNamespaceName.Namespace && service.Name == kindNamespaceName.Name {
+					isFound = true
+					break
+				}
+			}
+			if !isFound {
+				http.Error(w, "service not found", http.StatusNotFound)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func Restart(client *kubernetes.Clientset) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		kindNamespaceName := getKindNamespaceNameFromRequest(r)
