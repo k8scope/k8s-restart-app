@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background-color: #fff;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        button {
+            padding: 8px 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:disabled {
+            background-color: #aaa;
+        }
+        button:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Service Dashboard</h1>
+    <table id="serviceTable">
+        <thead>
+            <tr>
+                <th>Kind</th>
+                <th>Name</th>
+                <th>Namespace</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Rows will be dynamically populated here -->
+        </tbody>
+    </table>
+
+    <script>
+        // Function to fetch the list of services and populate the table
+        async function loadServices() {
+            try {
+                const response = await fetch('/api/v1/service');
+                const data = await response.json();
+
+                const tableBody = document.querySelector('#serviceTable tbody');
+                tableBody.innerHTML = '';  // Clear any existing rows
+
+                data.services.forEach(service => {
+                    const row = document.createElement('tr');
+                    const statusCellId = `status-${service.kind}-${service.name}-${service.namespace}`;
+
+                    row.innerHTML = `
+                        <td>${service.kind}</td>
+                        <td>${service.name}</td>
+                        <td>${service.namespace}</td>
+                        <td id="${statusCellId}">Loading...</td>
+                        <td><button onclick="restartService('${service.kind}', '${service.name}', '${service.namespace}')">Restart</button></td>
+                    `;
+                    tableBody.appendChild(row);
+
+                    // Open a WebSocket connection for each service to update status
+                    const statusWebSocket = new WebSocket(`ws://${location.host}/api/v1/service/${service.kind}/${service.namespace}/${service.name}/status`);
+
+                    // Handle WebSocket connection open event
+                    statusWebSocket.onopen = () => {
+                        console.log(`Connected to status WebSocket for ${service.name}`);
+                    };
+
+                    // Update status field with WebSocket message
+                    statusWebSocket.onmessage = (event) => {
+                        try {
+                            const statusData = JSON.parse(event.data);
+                            const statusElement = document.getElementById(statusCellId);
+
+                            // Construct a human-readable status message from pod_status map
+                            let statusMessage = '';
+                            for (const [status, count] of Object.entries(statusData.pod_status)) {
+                                statusMessage += `${status}: ${count} pods, `;
+                            }
+                            statusMessage = statusMessage.slice(0, -2); // Remove trailing comma and space
+
+                            // Update the status element with the new message
+                            if (statusElement) {
+                                statusElement.textContent = statusMessage || 'No status available';
+                                console.log(`Status for ${service.name} updated to: ${statusMessage}`);
+                            } else {
+                                console.warn(`Status element missing for service ${service.name}.`);
+                            }
+                        } catch (error) {
+                            console.error(`Failed to parse WebSocket message for ${service.name}: `, error);
+                        }
+                    };
+
+                    // Handle WebSocket connection error
+                    statusWebSocket.onerror = (error) => {
+                        console.error(`WebSocket error for ${service.name}: `, error);
+                        document.getElementById(statusCellId).textContent = 'Error';
+                    };
+
+                    // Handle WebSocket connection close
+                    statusWebSocket.onclose = () => {
+                        console.log(`WebSocket closed for ${service.name}`);
+                    };
+                });
+            } catch (error) {
+                console.error('Failed to load services:', error);
+            }
+        }
+
+        // Function to restart a specific service
+        async function restartService(kind, name, namespace) {
+            try {
+                const response = await fetch(`/api/v1/service/${kind}/${namespace}/${name}/restart`, { method: 'POST' });
+                if (response.ok) {
+                    alert(`Service ${name} restarted successfully.`);
+                } else {
+                    alert(`Failed to restart service ${name}.`);
+                }
+            } catch (error) {
+                console.error(`Error restarting service ${name}:`, error);
+                alert(`Error restarting service ${name}.`);
+            }
+        }
+
+        // Load services on page load
+        window.onload = loadServices;
+    </script>
+</body>
+</html>
