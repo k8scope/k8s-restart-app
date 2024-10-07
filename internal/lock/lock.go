@@ -67,3 +67,7 @@ func NewLock(locker Locker, forceUnlockAfterSec int) *Lock {
 func (l *Lock) Lock(name string) error {
 	return l.locker.Lock(name)
 }
+
+func (l *Lock) IsLocked(name string) bool {
+	return l.locker.IsLocked(name)
+}
