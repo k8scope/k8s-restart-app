@@ -67,8 +67,12 @@ func init() {
 	}
 	appConfig = cfg
 
-	// setup ledger
-	ldgr = ledger.New(k8sClient, envWatchInterval)
+	// setup ledger and watch apps
+	ldgr = ledger.New(k8sClient, lockH, envWatchInterval)
+	for _, app := range appConfig.Services {
+		ldgr.Watch(app)
+	}
+
 }
 
 func main() {
@@ -81,10 +85,10 @@ func main() {
 	rt.Route("/api/v1", func(r chi.Router) {
 		r.Route("/service", func(r chi.Router) {
 			r.Get("/", api.ListApplications(*appConfig))
+			r.Get("/status", api.Status(ldgr))
 			r.Route("/{kind}/{namespace}/{name}", func(r chi.Router) {
 				r.Use(api.MiddlewareValidation(*appConfig))
 				r.Post("/restart", api.Restart(k8sClient, lockH))
-				r.Get("/status", api.Status(ldgr))
 			})
 		})
 	})

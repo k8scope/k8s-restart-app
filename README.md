@@ -74,8 +74,8 @@ The application provides a simple API to restart services. The following endpoin
 | `/` | GET | Returns the HTML control page. |
 | `/metrics` | GET | Returns the Prometheus metrics. |
 | `/api/v1/service` | GET | Returns a list of services that can be restarted. |
+| `/api/v1/service/status` | GET | Returns the status of the service with the given kind, namespace and name. As websocket stream. |
 | `/api/v1/service/{kind}/{namespace}/{name}/restart` | POST | Restarts the service with the given kind, namespace and name. |
-| `/api/v1/service/{kind}/{namespace}/{name}/status` | GET | Returns the status of the service with the given kind, namespace and name. As websocket stream. |
 
 ## Metrics
 

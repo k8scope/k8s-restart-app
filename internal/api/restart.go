@@ -18,10 +18,10 @@ import (
 )
 
 var (
-	metricGaugeConnectedWatchers = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	metricGaugeConnectedWatchers = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "restart_app_connected_status_watchers",
 		Help: "The number of connected status watchers",
-	}, []string{"kind", "namespace", "name"})
+	})
 	metricCountRestarts = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "restart_app_restarts_total",
 		Help: "The total number of restarts",
@@ -109,13 +109,12 @@ func Status(ledger *ledger.Ledger) func(w http.ResponseWriter, r *http.Request) 
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		kindNamespaceName := getKindNamespaceNameFromRequest(r)
 
-		metricGaugeConnectedWatchers.WithLabelValues(kindNamespaceName.Kind, kindNamespaceName.Namespace, kindNamespaceName.Name).Inc()
-		defer metricGaugeConnectedWatchers.WithLabelValues(kindNamespaceName.Kind, kindNamespaceName.Namespace, kindNamespaceName.Name).Dec()
+		metricGaugeConnectedWatchers.Inc()
+		defer metricGaugeConnectedWatchers.Dec()
 
 		// start listening for updates
-		statusCh, unregister := ledger.Register(kindNamespaceName)
+		statusCh, unregister := ledger.Register()
 		// when the client disconnects, we stop listening for updates and unregister the client
 		defer unregister() //nolint:errcheck
 
