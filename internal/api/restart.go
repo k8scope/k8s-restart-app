@@ -10,6 +10,7 @@ import (
 	"github.com/k8scope/k8s-restart-app/internal/config"
 	"github.com/k8scope/k8s-restart-app/internal/k8s"
 	"github.com/k8scope/k8s-restart-app/internal/ledger"
+	"github.com/k8scope/k8s-restart-app/internal/lock"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"k8s.io/client-go/kubernetes"
@@ -72,11 +73,11 @@ func MiddlewareValidation(config config.Config) func(http.Handler) http.Handler 
 	}
 }
 
-func Restart(client *kubernetes.Clientset) func(w http.ResponseWriter, r *http.Request) {
+func Restart(client *kubernetes.Clientset, lock *lock.Lock) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		kindNamespaceName := getKindNamespaceNameFromRequest(r)
 		metricCountRestarts.WithLabelValues(kindNamespaceName.Kind, kindNamespaceName.Namespace, kindNamespaceName.Name).Inc()
-		err := k8s.RestartService(r.Context(), client, kindNamespaceName)
+		err := k8s.RestartService(r.Context(), client, lock, kindNamespaceName)
 		if err != nil {
 			metricCountRestartsFailed.WithLabelValues(kindNamespaceName.Kind, kindNamespaceName.Namespace, kindNamespaceName.Name).Inc()
 			http.Error(w, err.Error(), http.StatusInternalServerError)

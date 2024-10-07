@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/k8scope/k8s-restart-app/internal/lock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -20,11 +21,21 @@ func (s KindNamespaceName) String() string {
 	return s.Kind + "/" + s.Namespace + "/" + s.Name
 }
 
-func RestartService(ctx context.Context, clientset *kubernetes.Clientset, service KindNamespaceName) error {
+func RestartService(ctx context.Context, clientset *kubernetes.Clientset, lock *lock.Lock, service KindNamespaceName) error {
 	switch service.Kind {
 	case "Deployment":
+		err := lock.Lock(service.String())
+		if err != nil {
+			// we don't want to unlock the lock here, because we want to keep the lock until the service is restarted
+			return err
+		}
 		return restartDeployment(ctx, clientset, service)
 	case "StatefulSet":
+		err := lock.Lock(service.String())
+		if err != nil {
+			// we don't want to unlock the lock here, because we want to keep the lock until the service is restarted
+			return err
+		}
 		return restartStatefulSet(ctx, clientset, service)
 	default:
 		return fmt.Errorf("invalid service kind: %s", service.Kind)

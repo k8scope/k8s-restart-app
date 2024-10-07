@@ -9,6 +9,7 @@ import (
 	"github.com/k8scope/k8s-restart-app/internal/api"
 	"github.com/k8scope/k8s-restart-app/internal/config"
 	"github.com/k8scope/k8s-restart-app/internal/ledger"
+	"github.com/k8scope/k8s-restart-app/internal/lock"
 	"github.com/k8scope/k8s-restart-app/internal/utils"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/client-go/kubernetes"
@@ -21,9 +22,12 @@ var (
 	envConfigFilePath = utils.StringEnvOrDefault("CONFIG_FILE_PATH", "config.yaml")
 	envKubeConfigPath = utils.StringEnvOrDefault("KUBE_CONFIG_PATH", "")
 	envWatchInterval  = utils.IntEnvOrDefault("WATCH_INTERVAL", 10)
+	envForceUnlockSec = utils.IntEnvOrDefault("FORCE_UNLOCK_SEC", 300)
 
 	// non env variables
 	k8sClient *kubernetes.Clientset
+	// lock handling
+	lockH *lock.Lock = lock.NewLock(lock.NewInMem(), envForceUnlockSec)
 
 	appConfig *config.Config
 
@@ -79,7 +83,7 @@ func main() {
 			r.Get("/", api.ListApplications(*appConfig))
 			r.Route("/{kind}/{namespace}/{name}", func(r chi.Router) {
 				r.Use(api.MiddlewareValidation(*appConfig))
-				r.Post("/restart", api.Restart(k8sClient))
+				r.Post("/restart", api.Restart(k8sClient, lockH))
 				r.Get("/status", api.Status(ldgr))
 			})
 		})
