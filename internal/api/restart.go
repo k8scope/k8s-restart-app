@@ -111,14 +111,14 @@ func Status(ledger *ledger.Ledger) func(w http.ResponseWriter, r *http.Request) 
 		// start listening for updates
 		statusCh, unregister := ledger.Register(kindNamespaceName)
 		// when the client disconnects, we stop listening for updates and unregister the client
-		defer unregister()
+		defer unregister() //nolint:errcheck
 
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			slog.Error("failed to upgrade connection", "error", err)
 			return
 		}
-		defer conn.Close()
+		defer conn.Close() //nolint:errcheck
 
 		for {
 			select {

@@ -12,9 +12,9 @@ import (
 )
 
 func GetDeployment(ctx context.Context, client *kubernetes.Clientset, service KindNamespaceName) (*appsv1.Deployment, error) {
-	ctx, cf := context.WithDeadline(ctx, time.Now().Add(5*time.Second))
+	ctx2, cf := context.WithDeadline(ctx, time.Now().Add(5*time.Second))
 	defer cf()
-	deployment, err := client.AppsV1().Deployments(service.Namespace).Get(ctx, service.Name, metav1.GetOptions{})
+	deployment, err := client.AppsV1().Deployments(service.Namespace).Get(ctx2, service.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -22,9 +22,9 @@ func GetDeployment(ctx context.Context, client *kubernetes.Clientset, service Ki
 }
 
 func GetStatefulset(ctx context.Context, client *kubernetes.Clientset, service KindNamespaceName) (*appsv1.StatefulSet, error) {
-	ctx, cf := context.WithDeadline(context.Background(), time.Now().Add(5*time.Second))
+	ctx2, cf := context.WithDeadline(ctx, time.Now().Add(5*time.Second))
 	defer cf()
-	statefulset, err := client.AppsV1().StatefulSets(service.Namespace).Get(ctx, service.Name, metav1.GetOptions{})
+	statefulset, err := client.AppsV1().StatefulSets(service.Namespace).Get(ctx2, service.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

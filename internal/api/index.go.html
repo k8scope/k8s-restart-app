@@ -81,8 +81,10 @@
                     `;
                     tableBody.appendChild(row);
 
+                    // check if HTTP or HTTPS
+                    const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
                     // Open a WebSocket connection for each service to update status
-                    const statusWebSocket = new WebSocket(`ws://${location.host}/api/v1/service/${service.kind}/${service.namespace}/${service.name}/status`);
+                    const statusWebSocket = new WebSocket(`${wsProtocol}://${location.host}/api/v1/service/${service.kind}/${service.namespace}/${service.name}/status`);
 
                     // Handle WebSocket connection open event
                     statusWebSocket.onopen = () => {
