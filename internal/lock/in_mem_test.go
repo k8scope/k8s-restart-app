@@ -2,7 +2,6 @@ package lock
 
 import (
 	"reflect"
-	"sync"
 	"testing"
 	"time"
 
@@ -27,8 +26,7 @@ func TestNewInMem(t *testing.T) {
 
 func TestInMem_Lock(t *testing.T) {
 	type fields struct {
-		rwmu sync.RWMutex
-		m    map[string]time.Time
+		m map[string]time.Time
 	}
 	type args struct {
 		name string
@@ -42,8 +40,7 @@ func TestInMem_Lock(t *testing.T) {
 		{
 			name: "lock",
 			fields: fields{
-				rwmu: sync.RWMutex{},
-				m:    map[string]time.Time{},
+				m: map[string]time.Time{},
 			},
 			args: args{
 				name: "test",
@@ -53,7 +50,6 @@ func TestInMem_Lock(t *testing.T) {
 		{
 			name: "lock with other lock",
 			fields: fields{
-				rwmu: sync.RWMutex{},
 				m: map[string]time.Time{
 					"other": {},
 				},
@@ -66,8 +62,7 @@ func TestInMem_Lock(t *testing.T) {
 		{
 			name: "already locked",
 			fields: fields{
-				rwmu: sync.RWMutex{},
-				m:    map[string]time.Time{"test": {}},
+				m: map[string]time.Time{"test": {}},
 			},
 			args: args{
 				name: "test",
@@ -77,10 +72,8 @@ func TestInMem_Lock(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			l := &InMem{
-				rwmu: tt.fields.rwmu,
-				m:    tt.fields.m,
-			}
+			l := NewInMem()
+			l.m = tt.fields.m
 			if err := l.Lock(tt.args.name); (err != nil) != tt.wantErr {
 				t.Errorf("InMem.Lock() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -90,8 +83,7 @@ func TestInMem_Lock(t *testing.T) {
 
 func TestInMem_Unlock(t *testing.T) {
 	type fields struct {
-		rwmu sync.RWMutex
-		m    map[string]time.Time
+		m map[string]time.Time
 	}
 	type args struct {
 		name string
@@ -105,8 +97,7 @@ func TestInMem_Unlock(t *testing.T) {
 		{
 			name: "unlock",
 			fields: fields{
-				rwmu: sync.RWMutex{},
-				m:    map[string]time.Time{"test": {}},
+				m: map[string]time.Time{"test": {}},
 			},
 			args: args{
 				name: "test",
@@ -116,8 +107,7 @@ func TestInMem_Unlock(t *testing.T) {
 		{
 			name: "not locked",
 			fields: fields{
-				rwmu: sync.RWMutex{},
-				m:    map[string]time.Time{},
+				m: map[string]time.Time{},
 			},
 			args: args{
 				name: "test",
@@ -127,7 +117,6 @@ func TestInMem_Unlock(t *testing.T) {
 		{
 			name: "not locked with other lock",
 			fields: fields{
-				rwmu: sync.RWMutex{},
 				m: map[string]time.Time{
 					"other": {},
 				},
@@ -140,10 +129,8 @@ func TestInMem_Unlock(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			l := &InMem{
-				rwmu: tt.fields.rwmu,
-				m:    tt.fields.m,
-			}
+			l := NewInMem()
+			l.m = tt.fields.m
 			if err := l.Unlock(tt.args.name); (err != nil) != tt.wantErr {
 				t.Errorf("InMem.Unlock() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -153,8 +140,7 @@ func TestInMem_Unlock(t *testing.T) {
 
 func TestInMem_GetLocks(t *testing.T) {
 	type fields struct {
-		rwmu sync.RWMutex
-		m    map[string]time.Time
+		m map[string]time.Time
 	}
 	tests := []struct {
 		name   string
@@ -164,15 +150,13 @@ func TestInMem_GetLocks(t *testing.T) {
 		{
 			name: "get locks",
 			fields: fields{
-				rwmu: sync.RWMutex{},
-				m:    map[string]time.Time{"test": {}},
+				m: map[string]time.Time{"test": {}},
 			},
 			want: []string{"test"},
 		},
 		{
 			name: "get locks with two locks",
 			fields: fields{
-				rwmu: sync.RWMutex{},
 				m: map[string]time.Time{
 					"test":  {},
 					"other": {},
@@ -183,10 +167,8 @@ func TestInMem_GetLocks(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			l := &InMem{
-				rwmu: tt.fields.rwmu,
-				m:    tt.fields.m,
-			}
+			l := NewInMem()
+			l.m = tt.fields.m
 			if got := l.GetLocks(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("InMem.GetLocks() = %v, want %v", got, tt.want)
 			}
@@ -196,8 +178,7 @@ func TestInMem_GetLocks(t *testing.T) {
 
 func TestInMem_IsLocked(t *testing.T) {
 	type fields struct {
-		rwmu sync.RWMutex
-		m    map[string]time.Time
+		m map[string]time.Time
 	}
 	type args struct {
 		name string
@@ -211,8 +192,7 @@ func TestInMem_IsLocked(t *testing.T) {
 		{
 			name: "is locked",
 			fields: fields{
-				rwmu: sync.RWMutex{},
-				m:    map[string]time.Time{"test": {}},
+				m: map[string]time.Time{"test": {}},
 			},
 			args: args{
 				name: "test",
@@ -222,8 +202,7 @@ func TestInMem_IsLocked(t *testing.T) {
 		{
 			name: "is not locked",
 			fields: fields{
-				rwmu: sync.RWMutex{},
-				m:    map[string]time.Time{},
+				m: map[string]time.Time{},
 			},
 			args: args{
 				name: "test",
@@ -233,7 +212,6 @@ func TestInMem_IsLocked(t *testing.T) {
 		{
 			name: "is not locked with other lock",
 			fields: fields{
-				rwmu: sync.RWMutex{},
 				m: map[string]time.Time{
 					"other": {},
 				},
@@ -246,10 +224,8 @@ func TestInMem_IsLocked(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			l := &InMem{
-				rwmu: tt.fields.rwmu,
-				m:    tt.fields.m,
-			}
+			l := NewInMem()
+			l.m = tt.fields.m
 			if got := l.IsLocked(tt.args.name); got != tt.want {
 				t.Errorf("InMem.IsLocked() = %v, want %v", got, tt.want)
 			}
@@ -259,8 +235,7 @@ func TestInMem_IsLocked(t *testing.T) {
 
 func TestInMem_ForceUnlockAfter(t *testing.T) {
 	type fields struct {
-		rwmu sync.RWMutex
-		m    map[string]time.Time
+		m map[string]time.Time
 	}
 	type args struct {
 		duration time.Duration
@@ -275,7 +250,6 @@ func TestInMem_ForceUnlockAfter(t *testing.T) {
 		{
 			name: "force unlock for locks which are older than 1 second",
 			fields: fields{
-				rwmu: sync.RWMutex{},
 				m: map[string]time.Time{
 					"test": time.Now().Add(-time.Hour),
 				},
@@ -289,7 +263,6 @@ func TestInMem_ForceUnlockAfter(t *testing.T) {
 		{
 			name: "do not unlock",
 			fields: fields{
-				rwmu: sync.RWMutex{},
 				m: map[string]time.Time{
 					"test":  time.Now().Add(time.Hour),
 					"other": time.Now().Add(time.Hour),
@@ -307,7 +280,6 @@ func TestInMem_ForceUnlockAfter(t *testing.T) {
 		{
 			name: "force unlock after 5 seconds with two locks",
 			fields: fields{
-				rwmu: sync.RWMutex{},
 				m: map[string]time.Time{
 					"test":  time.Now().Add(-time.Hour),
 					"other": time.Now().Add(time.Hour),
@@ -321,10 +293,8 @@ func TestInMem_ForceUnlockAfter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			l := &InMem{
-				rwmu: tt.fields.rwmu,
-				m:    tt.fields.m,
-			}
+			l := NewInMem()
+			l.m = tt.fields.m
 			l.ForceUnlockAfter(tt.args.duration)
 			// we need to wait for the force unlock to happen, so we can check the locks
 			time.Sleep(1 * time.Second)
