@@ -2,17 +2,19 @@ package lock
 
 import (
 	"fmt"
+	"log/slog"
 	"sync"
+	"time"
 )
 
 type InMem struct {
 	rwmu sync.RWMutex
-	m    map[string]struct{}
+	m    map[string]time.Time
 }
 
 func NewInMem() *InMem {
 	return &InMem{
-		m: make(map[string]struct{}),
+		m: make(map[string]time.Time),
 	}
 }
 
@@ -22,7 +24,7 @@ func (l *InMem) Lock(name string) error {
 	if _, ok := l.m[name]; ok {
 		return fmt.Errorf("%w: %s", ErrResourceLocked, name)
 	}
-	l.m[name] = struct{}{}
+	l.m[name] = time.Now()
 	return nil
 }
 
@@ -51,4 +53,21 @@ func (l *InMem) GetLocks() []string {
 		locks = append(locks, k)
 	}
 	return locks
+}
+
+func (l *InMem) ForceUnlockAfter(duration time.Duration) {
+	go func() {
+		for {
+			for k, v := range l.m {
+				if time.Since(v) > duration {
+					err := l.Unlock(k)
+					if err != nil {
+						slog.Error("failed to force unlock resource", "error", err)
+						continue
+					}
+				}
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}()
 }

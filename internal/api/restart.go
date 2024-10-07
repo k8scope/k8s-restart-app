@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -73,11 +74,15 @@ func MiddlewareValidation(config config.Config) func(http.Handler) http.Handler 
 	}
 }
 
-func Restart(client *kubernetes.Clientset, lock *lock.Lock) func(w http.ResponseWriter, r *http.Request) {
+func Restart(client *kubernetes.Clientset, lck *lock.Lock) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		kindNamespaceName := getKindNamespaceNameFromRequest(r)
 		metricCountRestarts.WithLabelValues(kindNamespaceName.Kind, kindNamespaceName.Namespace, kindNamespaceName.Name).Inc()
-		err := k8s.RestartService(r.Context(), client, lock, kindNamespaceName)
+		err := k8s.RestartService(r.Context(), client, lck, kindNamespaceName)
+		if errors.Is(err, lock.ErrResourceLocked) {
+			http.Error(w, err.Error(), http.StatusLocked)
+			return
+		}
 		if err != nil {
 			metricCountRestartsFailed.WithLabelValues(kindNamespaceName.Kind, kindNamespaceName.Namespace, kindNamespaceName.Name).Inc()
 			http.Error(w, err.Error(), http.StatusInternalServerError)

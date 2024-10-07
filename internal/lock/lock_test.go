@@ -3,6 +3,7 @@ package lock
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestNewLock(t *testing.T) {
@@ -43,7 +44,7 @@ func TestLock_Lock(t *testing.T) {
 			name: "lock",
 			fields: fields{
 				locker: &InMem{
-					m: map[string]struct{}{},
+					m: map[string]time.Time{},
 				},
 			},
 			args: args{
@@ -55,8 +56,8 @@ func TestLock_Lock(t *testing.T) {
 			name: "lock with other lock",
 			fields: fields{
 				locker: &InMem{
-					m: map[string]struct{}{
-						"other": {},
+					m: map[string]time.Time{
+						"other": time.Now(),
 					},
 				},
 			},
@@ -69,8 +70,8 @@ func TestLock_Lock(t *testing.T) {
 			name: "already locked",
 			fields: fields{
 				locker: &InMem{
-					m: map[string]struct{}{
-						"test/test/test": {},
+					m: map[string]time.Time{
+						"test/test/test": time.Now(),
 					},
 				},
 			},

@@ -20,6 +20,7 @@ The configuration of the application is mostly done through environment variable
 | `CONFIG_FILE_PATH` | string | `config.yaml` | The path to the configuration file. |
 | `KUBE_CONFIG_PATH` | string | `` | The path to the kubeconfig file. If not specified, the application tries to use the in-cluster config. |
 | `WATCH_INTERVAL` | int | `10` | The interval in seconds the application watches for pod, deployment or statefulset changes |
+| `FORCE_UNLOCK_SEC` | int | `300` | The time in seconds a restart can take before the lock is force released. |
 
 In order to provide a list of services that should be allowed to be restarted, a configuration file must be provided. In that file, the services are defined as follows:
 
