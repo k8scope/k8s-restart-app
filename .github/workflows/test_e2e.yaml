@@ -1,0 +1,113 @@
+name: e2e-tests
+
+on:
+  push:
+    branches:
+      - "**"
+    paths-ignore:
+      - "*.md"
+      - LICENSE
+      - docker compose*
+      - .dockerignore
+      #- .github/
+      - .gitignore
+      - .gitmodules
+      - docs/
+      - hack/
+      - PROJECT
+  pull_request:
+    branches:
+      - "!dependabot/**"
+
+
+env:
+  IMG: ghcr.io/k8scope/k8s-restart-app:dev
+  ARTIFACT_NAME: artifact.tar
+
+jobs:
+  build-temp-container:
+    name: build container
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Build container
+      run: |
+        make docker-build
+    - name: Save image
+      run: |
+          docker save -o ${{ env.ARTIFACT_NAME }} ${{ env.IMG }}
+    - name: Upload image artifact tar
+      uses: actions/upload-artifact@v4
+      with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_NAME }}
+          retention-days: 1
+
+  e2e-tests:
+    name: e2e tests
+    runs-on: ubuntu-latest
+    env:
+      KUBERNETES_NAMESPACE: restart-app-system
+      CLUSTER_NAME: restart-app-e2e
+    needs:
+      - build-temp-container
+    strategy:
+      fail-fast: false
+      matrix:
+        kind_node_image:
+          - kindest/node:v1.31.0
+          - kindest/node:v1.30.4
+          - kindest/node:v1.29.2
+    steps:
+      - uses: actions/setup-go@v5
+      - uses: azure/setup-helm@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+
+      - name: Load image
+        run: docker load -i ${{ env.ARTIFACT_NAME }}
+
+      - name: Create K8s Kind Cluster
+        uses: helm/kind-action@v1.10.0
+        with:
+          node_image: ${{ matrix.kind_node_image }}
+          cluster_name: ${{ env.CLUSTER_NAME }}
+          config: _e2e/config/kind_config.yaml
+
+      - name: Add Helm repositories
+        run: |
+          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+          helm repo add k8scope https://k8scope.github.io/helm-charts
+          helm repo update
+
+      - name: Install NGINX
+        run: |
+          helm install nginx ingress-nginx/ingress-nginx \
+            --set controller.service.type=NodePort \
+            --set controller.service.nodePorts.http=31080 \
+            --set controller.service.nodePorts.https=31443 \
+            --set controller.admissionWebhooks.enabled=false
+          sleep 5
+
+      - name: Load image into kind cluster
+        run: |
+          kind load docker-image ${{ env.IMG }} --name ${{ env.CLUSTER_NAME }}
+
+      - name: Deploy test apps
+        run: |
+          kubectl apply -f _e2e/config/apps.yaml
+
+      - name: Install Restart App
+        run: |
+          helm install restart-app k8scope/restart-controller \
+              -n ${{ env.KUBERNETES_NAMESPACE }} \
+              --create-namespace \
+              -f _e2e/config/restart_app_config.yaml

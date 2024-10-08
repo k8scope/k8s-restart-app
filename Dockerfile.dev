@@ -1,0 +1,13 @@
+# Build the manager binary
+FROM golang:1.23 as builder
+ARG TARGETOS
+ARG TARGETARCH
+WORKDIR /workspace
+ADD . .
+RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o restart-app cmd/main.go
+
+FROM gcr.io/distroless/static:nonroot
+WORKDIR /
+COPY --from=builder /workspace/restart-app .
+USER 65532:65532
+ENTRYPOINT ["/restart-app"]
