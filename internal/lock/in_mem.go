@@ -45,16 +45,6 @@ func (l *InMem) IsLocked(name string) bool {
 	return ok
 }
 
-func (l *InMem) GetLocks() []string {
-	l.rwmu.RLock()
-	defer l.rwmu.RUnlock()
-	locks := make([]string, 0, len(l.m))
-	for k := range l.m {
-		locks = append(locks, k)
-	}
-	return locks
-}
-
 func (l *InMem) ForceUnlockAfter(duration time.Duration) {
 	go func() {
 		for {

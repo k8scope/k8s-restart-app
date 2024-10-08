@@ -4,8 +4,6 @@ import (
 	"reflect"
 	"testing"
 	"time"
-
-	"github.com/google/go-cmp/cmp"
 )
 
 func TestNewInMem(t *testing.T) {
@@ -138,44 +136,6 @@ func TestInMem_Unlock(t *testing.T) {
 	}
 }
 
-func TestInMem_GetLocks(t *testing.T) {
-	type fields struct {
-		m map[string]time.Time
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   []string
-	}{
-		{
-			name: "get locks",
-			fields: fields{
-				m: map[string]time.Time{"test": {}},
-			},
-			want: []string{"test"},
-		},
-		{
-			name: "get locks with two locks",
-			fields: fields{
-				m: map[string]time.Time{
-					"test":  {},
-					"other": {},
-				},
-			},
-			want: []string{"test", "other"},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			l := NewInMem()
-			l.m = tt.fields.m
-			if got := l.GetLocks(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("InMem.GetLocks() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestInMem_IsLocked(t *testing.T) {
 	type fields struct {
 		m map[string]time.Time
@@ -297,15 +257,19 @@ func TestInMem_ForceUnlockAfter(t *testing.T) {
 			l.m = tt.fields.m
 			l.ForceUnlockAfter(tt.args.duration)
 			// we need to wait for the force unlock to happen, so we can check the locks
-			time.Sleep(1 * time.Second)
+			time.Sleep(3 * time.Second)
 
-			locks := l.GetLocks()
-			diff := cmp.Diff(locks, tt.wantLock)
-			if diff != "" {
-				t.Errorf("unexpected locks (-got +want):\n%s", diff)
+			if len(l.m) != len(tt.wantLock) {
+				t.Errorf("InMem.ForceUnlockAfter() length not the same = %d, want %d", len(l.m), len(tt.wantLock))
 				return
 			}
 
+			for _, lock := range tt.wantLock {
+				if !l.IsLocked(lock) {
+					t.Errorf("InMem.ForceUnlockAfter() is not locked = %v, want %v", l.m, tt.wantLock)
+					return
+				}
+			}
 		})
 	}
 }

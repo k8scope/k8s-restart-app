@@ -26,13 +26,6 @@ type Locker interface {
 	//
 	// This will return true if the resource Deployment/my-namespace/my-deployment is locked
 	IsLocked(name string) bool
-	// GetLocks returns all locked resources
-	//
-	// Example:
-	//   GetLocks()
-	//
-	// This will return all locked resources as a slice of strings
-	GetLocks() []string
 	// Unlock unlocks the resource by its name
 	// It returns an error if the resource is not locked
 	//
