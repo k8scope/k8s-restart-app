@@ -111,3 +111,7 @@ jobs:
               -n ${{ env.KUBERNETES_NAMESPACE }} \
               --create-namespace \
               -f _e2e/config/restart_app_config.yaml
+
+      - name: Run e2e tests
+        run: |
+          go test -v ./_e2e -coverprofile=coverage.txt -covermode=atomic
