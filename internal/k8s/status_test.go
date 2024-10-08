@@ -147,3 +147,58 @@ func TestGetPodStatusFormat(t *testing.T) {
 		})
 	}
 }
+
+func TestPodsAllHealthy(t *testing.T) {
+	type args struct {
+		pods map[string]corev1.PodStatus
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "all healthy",
+			args: args{
+				pods: map[string]corev1.PodStatus{
+					"pod1": {
+						Phase: corev1.PodRunning,
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "one unhealthy",
+			args: args{
+				pods: map[string]corev1.PodStatus{
+					"pod1": {
+						Phase: corev1.PodUnknown,
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "two pods with different status",
+			args: args{
+				pods: map[string]corev1.PodStatus{
+					"pod1": {
+						Phase: corev1.PodRunning,
+					},
+					"pod2": {
+						Phase: corev1.PodPending,
+					},
+				},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := PodsAllHealthy(tt.args.pods); got != tt.want {
+				t.Errorf("PodsAllHealthy() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

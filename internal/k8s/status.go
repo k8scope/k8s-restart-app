@@ -43,6 +43,15 @@ func GetPodStatus(ctx context.Context, client *kubernetes.Clientset, namespace s
 	return podStatus, nil
 }
 
+func PodsAllHealthy(pods map[string]corev1.PodStatus) bool {
+	for _, pod := range pods {
+		if pod.Phase != corev1.PodRunning {
+			return false
+		}
+	}
+	return true
+}
+
 type PodStatus map[corev1.PodPhase]int
 
 func GetPodStatusFormat(pod map[string]corev1.PodStatus) PodStatus {
