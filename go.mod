@@ -1,11 +1,11 @@
 module github.com/k8scope/k8s-restart-app
 
-go 1.23
+go 1.22.3
 
 require (
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/google/go-cmp v0.6.0
-	github.com/gorilla/websocket v1.5.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/leonsteinhaeuser/observer/v2 v2.0.1
 	github.com/prometheus/client_golang v1.20.4
 	gopkg.in/yaml.v3 v3.0.1
