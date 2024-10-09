@@ -2,7 +2,7 @@ image:
   tag: dev
 
 rbac:
-  useClusterRole: true
+  useClusterRole: false
 
 services:
   test-1:
