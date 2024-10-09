@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/k8scope/k8s-restart-app/internal/config"
+	"github.com/k8scope/k8s-restart-app/internal/utils"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -15,7 +16,7 @@ import (
 var (
 	client *kubernetes.Clientset
 
-	serviceAddress = "http://localhost:8080"
+	serviceAddress = utils.StringEnvOrDefault("SERVICE_ADDRESS", "http://localhost:8080")
 )
 
 func init() {
