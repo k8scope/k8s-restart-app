@@ -95,7 +95,7 @@ func PodStatuses(pods []corev1.Pod) (PodStatus, bool) {
 // compareOwnerRefs compares the owner references and returns true if the owner reference is in the list
 func compareOwnerRefs(a []metav1.OwnerReference, b metav1.OwnerReference) bool {
 	for _, ref := range a {
-		if ref.APIVersion == b.APIVersion || ref.Kind == b.Kind || ref.Name == b.Name {
+		if ref.APIVersion == b.APIVersion && ref.Kind == b.Kind && ref.Name == b.Name {
 			return true
 		}
 	}
