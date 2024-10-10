@@ -21,6 +21,9 @@
 go.work
 go.work.sum
 
+# coverage files
+coverage.txt
+
 # env file
 .env
 .envrc
