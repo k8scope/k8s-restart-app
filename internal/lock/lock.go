@@ -64,3 +64,9 @@ func (l *Lock) Lock(name string) error {
 func (l *Lock) IsLocked(name string) bool {
 	return l.locker.IsLocked(name)
 }
+
+// Unlock unlocks the service by its KindNamespaceName
+// It returns an error if the service is not locked
+func (l *Lock) Unlock(name string) error {
+	return l.locker.Unlock(name)
+}

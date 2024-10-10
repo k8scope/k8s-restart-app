@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -75,6 +76,7 @@ func PodStatuses(pods []corev1.Pod) (PodStatus, bool) {
 	podStatus := PodStatus{}
 	for _, pod := range pods {
 		if !compareOwnerRefs(pod.OwnerReferences, *podOwnerRef) {
+			slog.Debug("comparing pod owner references failed for pod, because the owner reference is not the same as the first pod owner reference", "pod", pod.Name, "pod_owner_ref", pod.OwnerReferences, "first_pod_owner_ref", *podOwnerRef)
 			// pod is not owned by the same replicasets or statefulset
 			// so we skip it
 			continue
@@ -93,7 +95,7 @@ func PodStatuses(pods []corev1.Pod) (PodStatus, bool) {
 // compareOwnerRefs compares the owner references and returns true if the owner reference is in the list
 func compareOwnerRefs(a []metav1.OwnerReference, b metav1.OwnerReference) bool {
 	for _, ref := range a {
-		if ref == b {
+		if ref.APIVersion == b.APIVersion || ref.Kind == b.Kind || ref.Name == b.Name {
 			return true
 		}
 	}
