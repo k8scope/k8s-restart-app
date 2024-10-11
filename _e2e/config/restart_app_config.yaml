@@ -1,0 +1,24 @@
+image:
+  tag: dev
+
+rbac:
+  useClusterRole: false
+
+services:
+  test-1:
+    - kind: Deployment
+      name: "ngx-1"
+  test-2:
+    - kind: Deployment
+      name: "ngx-1"
+    - kind: Deployment
+      name: "ngx-2"
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: restart-app.localhost
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
