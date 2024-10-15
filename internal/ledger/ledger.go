@@ -2,6 +2,7 @@ package ledger
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -88,21 +89,32 @@ func (l *Ledger) watch(kindNamespaceName k8s.KindNamespaceName) {
 					IsLocked: true,
 				}
 
+				slog.Info("watching deployment", "kindNamespaceName", kindNamespaceName)
 				deployment, err := k8s.GetDeployment(ctx, l.client, kindNamespaceName)
 				if err != nil {
 					slog.Error("failed to get deployment", "error", err, "kindNamespaceName", kindNamespaceName)
 					objsts.send(err, l.transactionsCh)
-					return
+					break
 				}
 
-				pods, err := k8s.GetPodStatus(ctx, l.client, deployment.Namespace, deployment.Spec.Selector.MatchLabels)
+				pods, err := k8s.GetPods(ctx, l.client, deployment.Namespace, deployment.Spec.Selector.MatchLabels)
 				if err != nil {
-					slog.Error("failed to get pod status", "error", err, "kindNamespaceName", kindNamespaceName)
+					slog.Error("failed to gets by label selector", "error", err, "kindNamespaceName", kindNamespaceName)
 					objsts.send(err, l.transactionsCh)
-					return
+					break
 				}
-				objsts.IsLocked = l.lock.IsLocked(kindNamespaceName.String())
-				objsts.Status.PodStatus = k8s.GetPodStatusFormat(pods)
+
+				status, isRestarted := k8s.PodStatuses(pods)
+				if isRestarted {
+					err := l.lock.Unlock(kindNamespaceName.String())
+					if !errors.Is(err, lock.ErrResourceNotLocked) {
+						slog.Error("failed to unlock resource", "error", err, "kindNamespaceName", kindNamespaceName)
+						objsts.send(err, l.transactionsCh)
+						break
+					}
+					objsts.IsLocked = false
+				}
+				objsts.Status.PodStatus = status
 				objsts.Status.LastRestart = deployment.Spec.Template.ObjectMeta.Annotations["kubectl.kubernetes.io/restartedAt"]
 				objsts.send(nil, l.transactionsCh)
 			case "StatefulSet":
@@ -122,17 +134,27 @@ func (l *Ledger) watch(kindNamespaceName k8s.KindNamespaceName) {
 				if err != nil {
 					slog.Error("failed to get statefulset", "error", err, "kindNamespaceName", kindNamespaceName)
 					objsts.send(err, l.transactionsCh)
-					return
+					break
 				}
 
-				pods, err := k8s.GetPodStatus(ctx, l.client, statefulset.Namespace, statefulset.Spec.Selector.MatchLabels)
+				pods, err := k8s.GetPods(ctx, l.client, statefulset.Namespace, statefulset.Spec.Selector.MatchLabels)
 				if err != nil {
-					slog.Error("failed to get pod status", "error", err, "kindNamespaceName", kindNamespaceName)
+					slog.Error("failed to gets by label selector", "error", err, "kindNamespaceName", kindNamespaceName)
 					objsts.send(err, l.transactionsCh)
-					return
+					break
 				}
-				objsts.IsLocked = l.lock.IsLocked(kindNamespaceName.String())
-				objsts.Status.PodStatus = k8s.GetPodStatusFormat(pods)
+
+				status, isRestarted := k8s.PodStatuses(pods)
+				if isRestarted {
+					err := l.lock.Unlock(kindNamespaceName.String())
+					if !errors.Is(err, lock.ErrResourceNotLocked) {
+						slog.Error("failed to unlock resource", "error", err, "kindNamespaceName", kindNamespaceName)
+						objsts.send(err, l.transactionsCh)
+						break
+					}
+					objsts.IsLocked = false
+				}
+				objsts.Status.PodStatus = status
 				objsts.Status.LastRestart = statefulset.Spec.Template.ObjectMeta.Annotations["kubectl.kubernetes.io/restartedAt"]
 				objsts.send(nil, l.transactionsCh)
 			default:
