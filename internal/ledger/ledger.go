@@ -89,7 +89,7 @@ func (l *Ledger) watch(kindNamespaceName k8s.KindNamespaceName) {
 					IsLocked: true,
 				}
 
-				slog.Info("watching deployment", "kindNamespaceName", kindNamespaceName)
+				slog.Debug("watching deployment", "kindNamespaceName", kindNamespaceName)
 				deployment, err := k8s.GetDeployment(ctx, l.client, kindNamespaceName)
 				if err != nil {
 					slog.Error("failed to get deployment", "error", err, "kindNamespaceName", kindNamespaceName)
@@ -130,6 +130,7 @@ func (l *Ledger) watch(kindNamespaceName k8s.KindNamespaceName) {
 					IsLocked: true,
 				}
 
+				slog.Debug("watching statefulset", "kindNamespaceName", kindNamespaceName)
 				statefulset, err := k8s.GetStatefulset(ctx, l.client, kindNamespaceName)
 				if err != nil {
 					slog.Error("failed to get statefulset", "error", err, "kindNamespaceName", kindNamespaceName)
