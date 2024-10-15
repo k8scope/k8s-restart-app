@@ -1,6 +1,7 @@
 # k8s-restart-app
 
-[![unit-and-e2e-tests](https://github.com/k8scope/k8s-restart-app/actions/workflows/tests.yaml/badge.svg?branch=main)](https://github.com/k8scope/k8s-restart-app/actions/workflows/tests.yaml)
+[![tests](https://github.com/k8scope/k8s-restart-app/actions/workflows/tests.yaml/badge.svg)](https://github.com/k8scope/k8s-restart-app/actions/workflows/tests.yaml)
+[![e2e-tests](https://github.com/k8scope/k8s-restart-app/actions/workflows/test_e2e.yaml/badge.svg)](https://github.com/k8scope/k8s-restart-app/actions/workflows/test_e2e.yaml)
 
 A simple application that allows to restart services running in K8s. The service that should be allowed to be restarted, must be defined in the configuration file.
 
