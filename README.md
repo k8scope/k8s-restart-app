@@ -18,6 +18,7 @@ The configuration of the application is mostly done through environment variable
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | `LISTEN_ADDRESS` | string | `:8080` | The address the application should listen on. |
+| `LISTEN_MONITORING_ADDRESS` | string | `:6060` | The address the application should listen on for the `/metrics` prometheus and `/debug/pprof` endpoints. |
 | `CONFIG_FILE_PATH` | string | `config.yaml` | The path to the configuration file. |
 | `KUBE_CONFIG_PATH` | string | `` | The path to the kubeconfig file. If not specified, the application tries to use the in-cluster config. |
 | `WATCH_INTERVAL` | int | `10` | The interval in seconds the application watches for pod, deployment or statefulset changes |
@@ -73,10 +74,22 @@ The application provides a simple API to restart services. The following endpoin
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/` | GET | Returns the HTML control page. |
-| `/metrics` | GET | Returns the Prometheus metrics. |
 | `/api/v1/service` | GET | Returns a list of services that can be restarted. |
 | `/api/v1/service/status` | GET | Returns the status of the service with the given kind, namespace and name. As websocket stream. |
 | `/api/v1/service/{kind}/{namespace}/{name}/restart` | POST | Restarts the service with the given kind, namespace and name. |
+
+### Monitoring API
+
+The application provides a monitoring API to get information about the application itself. The following endpoints are available:
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/metrics` | GET | Returns the prometheus metrics. |
+| `/debug/pprof` | GET | Returns the pprof endpoints. |
+| `/debug/pprof/cmdline` | GET | Returns the pprof endpoint. |
+| `/debug/pprof/profile` | GET | Returns the pprof endpoint. |
+| `/debug/pprof/symbol` | GET | Returns the pprof endpoint. |
+| `/debug/pprof/trace` | GET | Returns the pprof endpoint. |
 
 ## Metrics
 
