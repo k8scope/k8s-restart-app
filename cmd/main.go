@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"os"
 
+	_ "net/http/pprof"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/k8scope/k8s-restart-app/internal/api"
 	"github.com/k8scope/k8s-restart-app/internal/config"
@@ -18,11 +20,12 @@ import (
 )
 
 var (
-	envListenAddress  = utils.StringEnvOrDefault("LISTEN_ADDRESS", ":8080")
-	envConfigFilePath = utils.StringEnvOrDefault("CONFIG_FILE_PATH", "config.yaml")
-	envKubeConfigPath = utils.StringEnvOrDefault("KUBE_CONFIG_PATH", "")
-	envWatchInterval  = utils.IntEnvOrDefault("WATCH_INTERVAL", 10)
-	envForceUnlockSec = utils.IntEnvOrDefault("FORCE_UNLOCK_SEC", 300)
+	envListenAddress           = utils.StringEnvOrDefault("LISTEN_ADDRESS", ":8080")
+	envListenMonitoringAddress = utils.StringEnvOrDefault("LISTEN_MONITORING_ADDRESS", ":6060")
+	envConfigFilePath          = utils.StringEnvOrDefault("CONFIG_FILE_PATH", "config.yaml")
+	envKubeConfigPath          = utils.StringEnvOrDefault("KUBE_CONFIG_PATH", "")
+	envWatchInterval           = utils.IntEnvOrDefault("WATCH_INTERVAL", 10)
+	envForceUnlockSec          = utils.IntEnvOrDefault("FORCE_UNLOCK_SEC", 300)
 
 	// non env variables
 	k8sClient *kubernetes.Clientset
@@ -81,7 +84,6 @@ func main() {
 
 	rt := chi.NewRouter()
 	rt.Get("/", api.Index)
-	rt.Handle("/metrics", promhttp.Handler())
 	rt.Route("/api/v1", func(r chi.Router) {
 		r.Route("/service", func(r chi.Router) {
 			r.Get("/", api.ListApplications(*appConfig))
@@ -92,6 +94,16 @@ func main() {
 			})
 		})
 	})
+
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		slog.Info("starting monitoring server...", "listen_address", envListenMonitoringAddress)
+		err := http.ListenAndServe(envListenMonitoringAddress, nil)
+		if err != nil {
+			slog.Error("failed to start monitoring server", "error", err)
+			os.Exit(-1)
+		}
+	}()
 
 	err := http.ListenAndServe(envListenAddress, rt)
 	if err != nil {
