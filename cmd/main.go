@@ -75,7 +75,6 @@ func init() {
 	for _, app := range appConfig.Services {
 		ldgr.Watch(app)
 	}
-
 }
 
 func main() {
