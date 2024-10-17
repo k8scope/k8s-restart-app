@@ -30,6 +30,14 @@ var (
 		Name: "restart_app_restarts_failed_total",
 		Help: "The total number of failed restarts",
 	}, []string{"kind", "namespace", "name"})
+
+	// upgrader is used to upgrade the HTTP connection to a WebSocket connection.
+	// This is used to send status updates to the client.
+	upgrader = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
 )
 
 func getKindNamespaceNameFromRequest(r *http.Request) k8s.KindNamespaceName {
@@ -102,11 +110,6 @@ func ListApplications(services config.Config) func(w http.ResponseWriter, r *htt
 }
 
 func Status(ledger *ledger.Ledger) func(w http.ResponseWriter, r *http.Request) {
-	upgrader := websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
-	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
