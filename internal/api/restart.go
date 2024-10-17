@@ -129,6 +129,7 @@ func Status(ledger *ledger.Ledger) func(w http.ResponseWriter, r *http.Request) 
 			select {
 			case <-ctx.Done():
 				// client disconnected
+				slog.Info("client disconnected, stopping sending updates to client")
 				return
 			case status := <-statusCh:
 				bts, err := json.Marshal(status)
