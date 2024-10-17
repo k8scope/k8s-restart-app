@@ -143,7 +143,7 @@ func Status(ledger *ledger.Ledger) func(w http.ResponseWriter, r *http.Request) 
 
 				err = conn.WriteMessage(websocket.TextMessage, bts)
 				if err != nil {
-					slog.Error("failed to write message", "error", err)
+					slog.Error("failed to write message to client. Client probably disconnected", "error", err)
 					return
 				}
 			}
