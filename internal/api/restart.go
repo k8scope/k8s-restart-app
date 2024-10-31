@@ -30,6 +30,14 @@ var (
 		Name: "restart_app_restarts_failed_total",
 		Help: "The total number of failed restarts",
 	}, []string{"kind", "namespace", "name"})
+
+	// upgrader is used to upgrade the HTTP connection to a WebSocket connection.
+	// This is used to send status updates to the client.
+	upgrader = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
 )
 
 func getKindNamespaceNameFromRequest(r *http.Request) k8s.KindNamespaceName {
@@ -102,11 +110,6 @@ func ListApplications(services config.Config) func(w http.ResponseWriter, r *htt
 }
 
 func Status(ledger *ledger.Ledger) func(w http.ResponseWriter, r *http.Request) {
-	upgrader := websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
-	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -129,6 +132,7 @@ func Status(ledger *ledger.Ledger) func(w http.ResponseWriter, r *http.Request) 
 			select {
 			case <-ctx.Done():
 				// client disconnected
+				slog.Info("client disconnected, stopping sending updates to client")
 				return
 			case status := <-statusCh:
 				bts, err := json.Marshal(status)
@@ -139,7 +143,7 @@ func Status(ledger *ledger.Ledger) func(w http.ResponseWriter, r *http.Request) 
 
 				err = conn.WriteMessage(websocket.TextMessage, bts)
 				if err != nil {
-					slog.Error("failed to write message", "error", err)
+					slog.Error("failed to write message to client. Client probably disconnected", "error", err)
 					return
 				}
 			}
