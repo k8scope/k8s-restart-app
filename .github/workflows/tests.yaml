@@ -16,6 +16,8 @@ jobs:
           submodules: true
           ref: ${{ github.ref }}
       - uses: actions/setup-go@v5
+      - name: go mod tidy
+        run: go mod tidy
       - name: vetting
         shell: bash
         run: go vet ./...
@@ -30,6 +32,8 @@ jobs:
           submodules: true
           ref: ${{ github.ref }}
       - uses: actions/setup-go@v5
+      - name: go mod tidy
+        run: go mod tidy
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
@@ -50,5 +54,7 @@ jobs:
       - uses: actions/setup-go@v5
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: go mod tidy
+        run: go mod tidy
       - name: Run unit tests
         run: go test -v ./... -coverprofile=coverage.txt -covermode=atomic

@@ -4,7 +4,8 @@ ARG TARGETOS
 ARG TARGETARCH
 WORKDIR /workspace
 ADD . .
-RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o restart-app cmd/main.go
+RUN go mod tidy && \
+    CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o restart-app cmd/main.go
 
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
