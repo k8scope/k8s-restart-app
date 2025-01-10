@@ -30,8 +30,6 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: go mod tidy
-        run: go mod tidy
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
